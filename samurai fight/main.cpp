@@ -85,6 +85,7 @@ void show_final_screen(const string& winner, int p_wins, int ai_wins, int total_
         {"Rich Thief", "(fav: Money, win)", win && fav == 3}
     };
 
+
     for (auto const& a : achs) {
         if (a.earned) cout << "\033[1;32m* " << a.name << " " << a.cond << "\033[0m" << endl;
         else cout << "\033[1;31m* " << a.name << " (???)\033[0m" << endl;
