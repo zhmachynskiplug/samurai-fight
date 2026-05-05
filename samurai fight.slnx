@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="samurai fight/samurai fight.vcxproj" />
+  <Project Path="samurai fight/samurai fight.vcxproj" Id="7d3f4c5f-4e39-4040-a3b6-ca5dcb9e7d73" />
 </Solution>

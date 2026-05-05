@@ -5,7 +5,6 @@
 #include <limits>
 #include <vector>
 #include <map>
-#include <windows.h>
 
 using namespace std;
 
@@ -43,7 +42,6 @@ int get_ai_choice(const vector<int>& history, int difficulty) {
     int r = rand() % 100;
     int t_random = (difficulty == 1) ? 50 : (difficulty == 2 ? 50 : 20);
     int t_counter = (difficulty == 1) ? 40 : (difficulty == 2 ? 25 : 40);
-
     if (r < t_random) return rand() % 3 + 1;
     if (r < t_random + t_counter) {
         if (p_last == 1) return 2; if (p_last == 2) return 3; return 1;
@@ -51,43 +49,53 @@ int get_ai_choice(const vector<int>& history, int difficulty) {
     if (p_last == 1) return 3; if (p_last == 2) return 1; return 2;
 }
 
-// Вывод статистики и достижений
-void show_stats(const string& winner, const vector<int>& p_hist, const vector<int>& a_hist, int total_rounds, const string& p_name) {
-    cout << "\n--- Stats ---" << endl;
+// Вывод финального экрана
+void show_final_screen(const string& winner, int p_wins, int ai_wins, int total_rounds, const vector<int>& p_hist, const string& p_name) {
+    print_rainbow(p_wins == 3 ? "\nChampion!" : "\nAI Champion!");
+
+    // Статистика бирюзовым цветом
+    cout << "\n\033[1;36m--- Stats ---\033[0m" << endl;
     cout << "Total rounds: \033[1;35m" << total_rounds << "\033[0m" << endl;
     cout << "Winner: \033[1;93m" << winner << "\033[0m" << endl;
 
     map<int, int> counts;
-    const vector<int>& hist = (winner == "AI") ? a_hist : p_hist;
     int fav = 0;
-    if (!hist.empty()) {
-        for (int m : hist) counts[m]++;
+    if (!p_hist.empty()) {
+        for (int m : p_hist) counts[m]++;
         fav = 1;
         for (auto const& [key, val] : counts) if (val > counts[fav]) fav = key;
         cout << "Favorite item: " << get_choice_name(fav) << endl;
     }
-    else {
-        cout << "Favorite item: None" << endl;
-    }
 
+    // Достижения
     cout << "\n\033[1;38;2;255;165;0mAchievements:\033[0m" << endl;
-    bool win = (winner == p_name);
-    string achs[] = { " * Sword-master", " * Defender-master", " * Quick-thief" };
-    string desc[] = { "(win with your favourite item - Sword)", "(win with your favourite item - Shield)", "(win with your favourite item - Money)" };
+    bool win = (p_wins == 3);
 
-    for (int i = 0; i < 3; ++i) {
-        bool earned = (win && fav == (i + 1));
-        if (earned) cout << "\033[1;32m" << achs[i] << " " << desc[i] << "\033[0m" << endl;
-        else cout << "\033[1;31m" << achs[i] << " (???)\033[0m" << endl;
+    struct Ach { string name; string cond; bool earned; };
+    vector<Ach> achs = {
+        {"Ace", "(win without losses)", win && ai_wins == 0},
+        {"Triple Strike", "(win in 3 rounds)", win && total_rounds == 3},
+        {"Quick Fight", "(win in 4-5 rounds)", win && total_rounds >= 4 && total_rounds <= 5},
+        {"Long Battle", "(win in 12+ rounds)", win && total_rounds >= 12},
+        {"Clutch", "(win from 0:2 score)", win && p_wins == 0 && ai_wins == 2},
+        {"Death", "(lost game)", !win},
+        {"Fast Death", "(lost in 5 or less rounds)", !win && total_rounds <= 5},
+        {"Sword Master", "(fav: Sword, win)", win && fav == 1},
+        {"Shield Master", "(fav: Shield, win)", win && fav == 2},
+        {"Rich Thief", "(fav: Money, win)", win && fav == 3}
+    };
+
+    for (auto const& a : achs) {
+        if (a.earned) cout << "\033[1;32m* " << a.name << " " << a.cond << "\033[0m" << endl;
+        else cout << "\033[1;31m* " << a.name << " (???)\033[0m" << endl;
     }
 }
 
 int main() {
-    SetConsoleOutputCP(CP_UTF8);
     srand(time(0));
     int p_wins = 0, ai_wins = 0, difficulty, total_rounds = 0;
     string name, input;
-    vector<int> p_hist, a_hist;
+    vector<int> p_hist;
 
     cout << "Enter name: "; cin >> name;
     while (true) {
@@ -101,7 +109,8 @@ int main() {
         print_status(name, p_wins, ai_wins);
         int p_choice = 0;
         while (true) {
-            cout << "Choose: 1.Sword, 2.Shield, 3.Money (or 'srndr'): ";
+            // Цвета в строке выбора
+            cout << "Choose: 1.\033[1;31mSword\033[0m, 2.\033[1;34mShield\033[0m, 3.\033[1;32mMoney\033[0m (or 'srndr'): ";
             cin >> input;
             if (input == "srndr") { ai_wins = 3; goto end_game; }
             try { p_choice = stoi(input); if (p_choice >= 1 && p_choice <= 3) break; }
@@ -120,10 +129,9 @@ int main() {
         else {
             cout << "AI wins round!" << endl; ai_wins++;
         }
-        p_hist.push_back(p_choice); a_hist.push_back(ai_choice);
+        p_hist.push_back(p_choice);
     }
 end_game:
-    print_rainbow(p_wins == 3 ? "\nChampion!" : "\nAI Champion!");
-    show_stats((p_wins == 3 ? name : "AI"), p_hist, a_hist, total_rounds, name);
+    show_final_screen((p_wins == 3 ? name : "AI"), p_wins, ai_wins, total_rounds, p_hist, name);
     return 0;
 }
